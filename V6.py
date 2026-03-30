@@ -220,29 +220,22 @@ if not df_tmp.empty:
         plot_bgcolor='rgba(0,0,0,0)', 
         paper_bgcolor='#1e1e1e',
         font=dict(color='white'),
-        
-        # --- SOLUCIÓN DEL EJE NEGATIVO ---
-        # En lugar de autorange, le pasamos el rango exacto: [Máximo + 1, 0]
-        xaxis=dict(
-            title='Número de Etapa', 
-            range=[df_tmp['Etapa'].max() + 1, 0], 
-            tickmode='linear', 
-            dtick=2
-        ),
-        # ---------------------------------
-        
+        xaxis=dict(title='Número de Etapa', range=[df_tmp['Etapa'].max() + 1, 0], tickmode='linear', dtick=2),
         yaxis=dict(title='', categoryorder='category descending', dtick=1), 
         height=altura_dinamica,
-        margin=dict(t=10, b=80), 
         
-        # LEYENDA ABAJO DEL GRÁFICO
+        # --- CLAVE: Invertimos los márgenes ---
+        # Le damos 100px arriba (t=100) para la leyenda y reducimos el de abajo (b=20)
+        margin=dict(t=100, b=20), 
+        
+        # --- LEYENDA ARRIBA DEL GRÁFICO ---
         legend=dict(
             title="",             
             orientation="h",      
-            yanchor="top",        
-            y=-0.15,              
+            yanchor="bottom",     # El ancla es la base de la leyenda...
+            y=1.05,               # ...y la ponemos por encima del borde superior del gráfico (1.0)
             xanchor="center",     
-            x=0.5,                
+            x=0.5,                # Centrada
             bgcolor='rgba(0,0,0,0)', 
             font=dict(color='white') 
         )
