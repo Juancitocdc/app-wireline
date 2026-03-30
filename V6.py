@@ -8,6 +8,8 @@ import base64
 # CONFIGURACIÓN BÁSICA DE STREAMLIT
 # ==========================================
 st.set_page_config(page_title="App Wireline", layout="wide")
+
+# Mantenemos el título principal limpio
 st.title("Seguimiento de Operaciones - Wireline")
 
 # ==========================================
@@ -22,7 +24,6 @@ def cargar_imagen_base64(ruta):
     except FileNotFoundError:
         return None
 
-# Cargamos tu imagen de fondo (Recuerda que debe estar en GitHub)
 ruta_imagen = "pala.jpg"
 imagen_uri = cargar_imagen_base64(ruta_imagen)
 
@@ -86,7 +87,7 @@ if sel_pozo != "Todos":
 st.divider()
 
 # ==========================================
-# 3. LÓGICA DE GRÁFICO (CON LEYENDA DINÁMICA TRANSPARENTE)
+# 3. LÓGICA DE GRÁFICO 
 # ==========================================
 if not df_tmp.empty:
     
@@ -112,8 +113,15 @@ if not df_tmp.empty:
             filas_grilla.append({col_pozo: pozo, 'Etapa': e})
             
     df_grilla = pd.DataFrame(filas_grilla)
+    
+    # Cruzamos datos reales
     df_tmp = pd.merge(df_grilla, df_tmp, on=[col_pozo, 'Etapa'], how='left')
     
+    # --- SOLUCIÓN DE CUADRADOS DEFORMADOS ---
+    # Eliminamos duplicados en la misma etapa para que no se dibujen cuadrados superpuestos
+    df_tmp = df_tmp.drop_duplicates(subset=[col_pozo, 'Etapa'], keep='first')
+    
+    # Rellenamos nulos
     df_tmp[col_tapon] = df_tmp[col_tapon].fillna('Pendiente')
     df_tmp[col_carga] = df_tmp[col_carga].fillna('Pendiente')
     df_tmp[col_cluster] = df_tmp[col_cluster].fillna(0)
@@ -188,7 +196,7 @@ if not df_tmp.empty:
             mode='markers',
             marker=dict(
                 symbol='square', 
-                size=16, 
+                size=14, # <-- Tamaño un poco más ajustado para garantizar la separación
                 color=mapa_activo.get(cat, '#ff0000'), 
                 line=dict(width=1, color='black')
             ),
@@ -196,7 +204,6 @@ if not df_tmp.empty:
             hoverinfo="text"
         ))
 
-    # Inyección de la imagen de fondo
     if imagen_uri:
         fig.add_layout_image(
             dict(
@@ -216,16 +223,16 @@ if not df_tmp.empty:
         xaxis=dict(title='Número de Etapa', autorange="reversed", tickmode='linear', dtick=2),
         yaxis=dict(title='', categoryorder='category descending', dtick=1), 
         height=altura_dinamica,
-        margin=dict(t=20), # Margen superior reducido
+        margin=dict(t=10, b=80), # Margen extra abajo para que la leyenda no se corte
         
-        # LEYENDA TRANSPARENTE Y HORIZONTAL
+        # --- NUEVA LEYENDA ABAJO DEL GRÁFICO ---
         legend=dict(
             title="",             
             orientation="h",      
-            yanchor="bottom",     
-            y=1.02,               
-            xanchor="left",       
-            x=0,                  
+            yanchor="top",        # El ancla es la parte superior de la leyenda
+            y=-0.15,              # La empujamos hacia abajo (fuera de las líneas de los pozos)
+            xanchor="center",     
+            x=0.5,                # Centrada perfectamente
             bgcolor='rgba(0,0,0,0)', 
             font=dict(color='white') 
         )
