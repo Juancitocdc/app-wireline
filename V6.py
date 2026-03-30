@@ -220,24 +220,33 @@ if not df_tmp.empty:
         plot_bgcolor='rgba(0,0,0,0)', 
         paper_bgcolor='#1e1e1e',
         font=dict(color='white'),
-        xaxis=dict(title='Número de Etapa', autorange="reversed", tickmode='linear', dtick=2),
+        
+        # --- SOLUCIÓN DEL EJE NEGATIVO ---
+        # En lugar de autorange, le pasamos el rango exacto: [Máximo + 1, 0]
+        xaxis=dict(
+            title='Número de Etapa', 
+            range=[df_tmp['Etapa'].max() + 1, 0], 
+            tickmode='linear', 
+            dtick=2
+        ),
+        # ---------------------------------
+        
         yaxis=dict(title='', categoryorder='category descending', dtick=1), 
         height=altura_dinamica,
-        margin=dict(t=10, b=80), # Margen extra abajo para que la leyenda no se corte
+        margin=dict(t=10, b=80), 
         
-        # --- NUEVA LEYENDA ABAJO DEL GRÁFICO ---
+        # LEYENDA ABAJO DEL GRÁFICO
         legend=dict(
             title="",             
             orientation="h",      
-            yanchor="top",        # El ancla es la parte superior de la leyenda
-            y=-0.15,              # La empujamos hacia abajo (fuera de las líneas de los pozos)
+            yanchor="top",        
+            y=-0.15,              
             xanchor="center",     
-            x=0.5,                # Centrada perfectamente
+            x=0.5,                
             bgcolor='rgba(0,0,0,0)', 
             font=dict(color='white') 
         )
     )
-
     st.plotly_chart(fig, use_container_width=True)
 
 else:
