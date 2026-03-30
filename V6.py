@@ -1,6 +1,3 @@
-
-
-
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -25,7 +22,7 @@ def cargar_imagen_base64(ruta):
     except FileNotFoundError:
         return None
 
-# Cargamos tu imagen de fondo (verifica la ruta)
+# Cargamos tu imagen de fondo (Recuerda que debe estar en GitHub)
 ruta_imagen = "pala.jpg"
 imagen_uri = cargar_imagen_base64(ruta_imagen)
 
@@ -89,11 +86,11 @@ if sel_pozo != "Todos":
 st.divider()
 
 # ==========================================
-# 3. LÓGICA DE GRÁFICO (DICCIONARIO EN CÓDIGO)
+# 3. LÓGICA DE GRÁFICO (CON LEYENDA DINÁMICA TRANSPARENTE)
 # ==========================================
 if not df_tmp.empty:
     
-    # --- 1. DICCIONARIO MANUAL DE ETAPAS DE DISEÑO ---
+    # --- DICCIONARIO MANUAL DE ETAPAS DE DISEÑO ---
     etapas_diseno = {
         'FP-1461(h)': 71,
         'FP-1462(h)': 70,
@@ -103,7 +100,7 @@ if not df_tmp.empty:
     
     max_etapas_reales = df_tmp.groupby(col_pozo)['Etapa'].max().to_dict()
 
-    # --- 2. CREAR LA GRILLA DE ETAPAS ---
+    # --- CREAR LA GRILLA DE ETAPAS ---
     pozos_filtrados = df_tmp[col_pozo].unique()
     filas_grilla = []
     
@@ -115,7 +112,6 @@ if not df_tmp.empty:
             filas_grilla.append({col_pozo: pozo, 'Etapa': e})
             
     df_grilla = pd.DataFrame(filas_grilla)
-    
     df_tmp = pd.merge(df_grilla, df_tmp, on=[col_pozo, 'Etapa'], how='left')
     
     df_tmp[col_tapon] = df_tmp[col_tapon].fillna('Pendiente')
@@ -125,111 +121,114 @@ if not df_tmp.empty:
     df_tmp[col_densidad] = df_tmp[col_densidad].fillna('-')
     df_tmp['Config Disparo'] = df_tmp['Config Disparo'].fillna('Pendiente')
 
-    # --- 3. DEFINICIÓN DE COLORES Y HOVER (CON REGLA PARA ETAPA 1) ---
-    color_estado = []
-    color_tapon = []
-    color_config = []
-    hover_text = []
+    # --- CREAR COLUMNAS CATEGÓRICAS PARA LA LEYENDA ---
+    df_tmp['Estado_Cat'] = df_tmp.apply(lambda x: 'BPS' if x['Etapa'] == 1 else ('Completado' if pd.notna(x[col_metros]) else 'Pendiente'), axis=1)
+    df_tmp['Tapon_Cat'] = df_tmp.apply(lambda x: 'BPS' if x['Etapa'] == 1 else x[col_tapon], axis=1)
+    df_tmp['Config_Cat'] = df_tmp.apply(lambda x: 'BPS' if x['Etapa'] == 1 else x['Config Disparo'], axis=1)
 
-    # Preparamos las paletas de colores
-    tapones_unicos = df_base[col_tapon].unique() 
+    # --- MAPAS DE COLORES ---
+    mapa_estado = {'BPS': '#ffffff', 'Completado': '#2ca02c', 'Pendiente': '#444444'}
+    
+    tapones_unicos = [t for t in df_base[col_tapon].unique() if t != 'Pendiente']
     paleta_tapon = px.colors.qualitative.Set1
     mapa_tapon = {tapon: paleta_tapon[i % len(paleta_tapon)] for i, tapon in enumerate(tapones_unicos)}
     mapa_tapon['Pendiente'] = '#444444'
-
-    configs_unicas = df_base['Config Disparo'].unique()
+    mapa_tapon['BPS'] = '#ffffff'
+    
+    configs_unicas = [c for c in df_base['Config Disparo'].unique() if c != 'Pendiente']
     paleta_config = px.colors.qualitative.Plotly
     mapa_config = {conf: paleta_config[i % len(paleta_config)] for i, conf in enumerate(configs_unicas)}
-    mapa_config['Pendiente'] = '#444444'
+    mapa_config['Pendiente'] = '#444444' 
+    mapa_config['BPS'] = '#ffffff'
 
-    # Recorremos fila por fila para aplicar las reglas de la Etapa 1
-    for index, row in df_tmp.iterrows():
-        e = row['Etapa']
-        
-        # Regla de Colores
-        if e == 1:
-            color_estado.append('#2ca02c') # Verde forzado
-            color_tapon.append('#ffffff')  # Blanco forzado
-            color_config.append('#ffffff') # Blanco forzado
-            
-            # Hover limpio para BPS
-            hover_text.append(f"<b>Pozo:</b> {row[col_pozo]}<br><b>Etapa:</b> 1<br><b>BPS</b>")
-        else:
-            # Colores normales
-            color_estado.append('#2ca02c' if pd.notna(row[col_metros]) else '#444444')
-            color_tapon.append(mapa_tapon.get(row[col_tapon], '#444444'))
-            color_config.append(mapa_config.get(row['Config Disparo'], '#444444'))
-            
-            # Hover completo con redondeo
-            m_val = round(row[col_metros], 2) if pd.notna(row[col_metros]) else "nan"
-            hover_text.append(
-                f"<b>Pozo:</b> {row[col_pozo]}<br>"
-                f"<b>Etapa:</b> {e}<br>"
-                f"---<br>"
-                f"<b>Tapón:</b> {row[col_tapon]}<br>"
-                f"<b>Carga:</b> {row[col_carga]}<br>"
-                f"<b>Clusters:</b> {row[col_cluster]} | "
-                f"<b>Fase:</b> {row[col_fase]} | "
-                f"<b>Densidad:</b> {row[col_densidad]}<br>"
-                f"<b>Metros Efectivos:</b> {m_val} m"
-            )
+    # --- PRE-CALCULAR EL HOVER TEXT ---
+    def generar_hover(row):
+        if row['Etapa'] == 1:
+            return f"<b>Pozo:</b> {row[col_pozo]}<br><b>Etapa:</b> 1<br><b>BPS</b>"
+        m_val = round(row[col_metros], 2) if pd.notna(row[col_metros]) else "nan"
+        return (
+            f"<b>Pozo:</b> {row[col_pozo]}<br><b>Etapa:</b> {row['Etapa']}<br>---<br>"
+            f"<b>Tapón:</b> {row[col_tapon]}<br><b>Carga:</b> {row[col_carga]}<br>"
+            f"<b>Clusters:</b> {row[col_cluster]} | <b>Fase:</b> {row[col_fase]} | <b>Densidad:</b> {row[col_densidad]}<br>"
+            f"<b>Metros Efectivos:</b> {m_val} m"
+        )
+    df_tmp['Hover'] = df_tmp.apply(generar_hover, axis=1)
 
-    # --- 4. CONSTRUCCIÓN DE LA FIGURA PLOTLY ---
+    # --- TÍTULO Y SELECTOR DE VISTA CON STREAMLIT ---
+    cantidad_pozos = len(df_tmp[col_pozo].unique())
+    st.markdown(f"#### 📍 Vista PAD ({cantidad_pozos} pozos filtrados)")
+    
+    vista_seleccionada = st.radio(
+        "👁️ Seleccionar Vista de Color:", 
+        ["Estado", "Tipo de Tapón", "Configuración de Disparos"], 
+        horizontal=True
+    )
+
+    if vista_seleccionada == "Estado":
+        col_activa = 'Estado_Cat'
+        mapa_activo = mapa_estado
+    elif vista_seleccionada == "Tipo de Tapón":
+        col_activa = 'Tapon_Cat'
+        mapa_activo = mapa_tapon
+    else:
+        col_activa = 'Config_Cat'
+        mapa_activo = mapa_config
+
+    # --- CONSTRUCCIÓN DE LA FIGURA PLOTLY ---
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(
-        x=df_tmp['Etapa'],
-        y=df_tmp[col_pozo],
-        mode='markers',
-        marker=dict(symbol='square', size=16, color=color_estado, line=dict(width=1, color='black')),
-        text=hover_text,
-        hoverinfo="text"
-    ))
+    categorias = sorted(df_tmp[col_activa].unique())
+    
+    for cat in categorias:
+        df_cat = df_tmp[df_tmp[col_activa] == cat]
+        fig.add_trace(go.Scatter(
+            x=df_cat['Etapa'],
+            y=df_cat[col_pozo],
+            name=str(cat), 
+            mode='markers',
+            marker=dict(
+                symbol='square', 
+                size=16, 
+                color=mapa_activo.get(cat, '#ff0000'), 
+                line=dict(width=1, color='black')
+            ),
+            text=df_cat['Hover'],
+            hoverinfo="text"
+        ))
 
     # Inyección de la imagen de fondo
-    # if imagen_uri:
-    #     fig.add_layout_image(
-    #         dict(
-    #             source=imagen_uri,
-    #             xref="paper", yref="paper",
-    #             x=0, y=1,
-    #             sizex=1, sizey=1,
-    #             xanchor="left", yanchor="top",
-    #             sizing="stretch",
-    #             opacity=0.3, 
-    #             layer="below"
-    #         )
-    #     )
+    if imagen_uri:
+        fig.add_layout_image(
+            dict(
+                source=imagen_uri, xref="paper", yref="paper", x=0, y=1,
+                sizex=1, sizey=1, xanchor="left", yanchor="top",
+                sizing="stretch", opacity=0.3, layer="below"
+            )
+        )
 
-# --- CÁLCULO DE ALTURA DINÁMICA ---
-    # Contamos cuántos pozos únicos hay en la vista actual
-    cantidad_pozos = len(df_tmp[col_pozo].unique())
-    
-    # Le damos 35 píxeles de altura a cada pozo, con un mínimo de 500px en total
     altura_dinamica = max(500, cantidad_pozos * 35)
 
     # Configuración del layout
     fig.update_layout(
-        title=f'Vista PAD ({cantidad_pozos} pozos filtrados)',
         plot_bgcolor='rgba(0,0,0,0)', 
         paper_bgcolor='#1e1e1e',
         font=dict(color='white'),
         xaxis=dict(title='Número de Etapa', autorange="reversed", tickmode='linear', dtick=2),
-        
-        # Agregamos dtick=1 al eje Y para forzar a que muestre TODOS los nombres de los pozos
         yaxis=dict(title='', categoryorder='category descending', dtick=1), 
+        height=altura_dinamica,
+        margin=dict(t=20), # Margen superior reducido
         
-        height=altura_dinamica, # <-- Usamos la variable dinámica aquí en lugar del 500 fijo
-        
-        updatemenus=[dict(
-            buttons=list([
-                dict(args=[{"marker.color": [color_estado]}], label="Vista: Estado", method="restyle"),
-                dict(args=[{"marker.color": [color_tapon]}], label="Vista: Tipo de Tapón", method="restyle"),
-                dict(args=[{"marker.color": [color_config]}], label="Vista: Configuración", method="restyle")
-            ]),
-            direction="down", pad={"r": 10, "t": 10}, showactive=True,
-            x=0.01, xanchor="left", y=1.2, yanchor="top", bgcolor="#333333", bordercolor="white"
-        )]
+        # LEYENDA TRANSPARENTE Y HORIZONTAL
+        legend=dict(
+            title="",             
+            orientation="h",      
+            yanchor="bottom",     
+            y=1.02,               
+            xanchor="left",       
+            x=0,                  
+            bgcolor='rgba(0,0,0,0)', 
+            font=dict(color='white') 
+        )
     )
 
     st.plotly_chart(fig, use_container_width=True)
