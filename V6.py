@@ -10,7 +10,7 @@ import base64
 st.set_page_config(page_title="App Wireline", layout="wide")
 
 # Mantenemos el título principal limpio
-st.title("Seguimiento de Operaciones - Wireline")
+st.title("Wireline")
 
 # ==========================================
 # 0. FUNCIÓN PARA LEER LA IMAGEN DE FONDO
@@ -67,7 +67,7 @@ df_base, col_yac, col_pad, col_pozo, col_tapon, col_carga, col_cluster, col_fase
 # ==========================================
 # 2. FILTROS EN STREAMLIT
 # ==========================================
-st.markdown("### 🔍 Filtros")
+st.markdown("### Filtros")
 f1, f2, f3 = st.columns(3)
 
 yac_opts = ["Todos"] + sorted(df_base[col_yac].dropna().unique().tolist())
@@ -164,7 +164,7 @@ if not df_tmp.empty:
 
     # --- TÍTULO Y SELECTOR DE VISTA CON STREAMLIT ---
     cantidad_pozos = len(df_tmp[col_pozo].unique())
-    st.markdown(f"#### 📍 Vista PAD ({cantidad_pozos} pozos filtrados)")
+    st.markdown(f"#### {cantidad_pozos} pozos filtrados")
     
     vista_seleccionada = st.radio(
         "👁️ Seleccionar Vista de Color:", 
