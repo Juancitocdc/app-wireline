@@ -26,7 +26,7 @@ def cargar_imagen_base64(ruta):
         return None
 
 # Cargamos tu imagen de fondo (verifica la ruta)
-ruta_imagen = r"C:\Users\T01JDIAZCHAI\Downloads\pala.jpg"
+ruta_imagen = "pala.jpg"
 imagen_uri = cargar_imagen_base64(ruta_imagen)
 
 # ==========================================
@@ -34,7 +34,7 @@ imagen_uri = cargar_imagen_base64(ruta_imagen)
 # ==========================================
 @st.cache_data
 def cargar_datos():
-    ruta_excel = r"C:\Users\T01JDIAZCHAI\Downloads\App Wireline\Wireline_Python (1).xlsx"
+    ruta_excel = "Wireline_Python (1).xlsx"
     df = pd.read_excel(ruta_excel)
     
     df.columns = df.columns.str.strip()
